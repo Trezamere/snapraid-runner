@@ -12,7 +12,7 @@ import threading
 import time
 import traceback
 from collections import Counter, defaultdict
-from io import StringIO
+from io import StringIO, IOBase
 
 # Global variables
 config = None
@@ -22,15 +22,15 @@ OUTPUT = 15
 OUTERR = 25
 
 
-def tee_log(infile, out_lines, log_level):
+def tee_log(infile: IOBase, out_lines: list, log_level: int) -> threading.Thread:
     """
     Create a thread that saves all the output on infile to out_lines and
     logs every line with log_level
     """
 
     def tee_thread():
-        for line in iter(infile.readline, ""):
-            line = line.strip()
+        for line in iter(infile.readline, b""):
+            line = line.decode().strip()
             # Do not log the progress display
             if "\r" in line:
                 line = line.split("\r")[-1]
@@ -43,18 +43,19 @@ def tee_log(infile, out_lines, log_level):
     return t
 
 
-def snapraid_command(command, args=None, ignore_errors=False):
+def snapraid_command(command: str, args: list = None, ignore_errors: bool = False) -> list:
     """
     Run snapraid command
     Raises subprocess.CalledProcessError if errorlevel != 0
     """
     if args is None:
-        args = {}
-    arguments = ["--conf", config["snapraid"]["config"]]
-    for (k, v) in args.items():
-        arguments.extend(["--" + k, str(v)])
+        args = []
+    args.insert(0, config["snapraid"]["executable"])
+    args.insert(1, command)
+    args.extend(["--conf", config["snapraid"]["config", "--verbose"]])
+
     p = subprocess.Popen(
-        [config["snapraid"]["executable"], command] + arguments,
+        args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
     out = []
@@ -165,8 +166,7 @@ def load_config(args):
 
 
 def setup_logger():
-    log_format = logging.Formatter(
-        "%(asctime)s [%(levelname)-6.6s] %(message)s")
+    log_format = logging.Formatter("%(asctime)s [%(levelname)-6.6s] %(message)s")
     root_logger = logging.getLogger()
     logging.addLevelName(OUTPUT, "OUTPUT")
     logging.addLevelName(OUTERR, "OUTERR")
@@ -176,9 +176,13 @@ def setup_logger():
     root_logger.addHandler(console_logger)
 
     if config["logging"]["file"]:
+        log_file = config["logging"]["file"]
+        log_dir = os.path.dirname(log_file)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
         max_log_size = min(config["logging"]["maxsize"], 0) * 1024
         file_logger = logging.handlers.RotatingFileHandler(
-            config["logging"]["file"],
+            log_file,
             maxBytes=max_log_size,
             backupCount=9)
         file_logger.setFormatter(log_format)
@@ -282,10 +286,10 @@ def run():
     if config["scrub"]["enabled"]:
         logging.info("Running scrub...")
         try:
-            snapraid_command("scrub", {
-                "percentage": config["scrub"]["percentage"],
-                "older-than": config["scrub"]["older-than"],
-            })
+            snapraid_command("scrub", [
+                "--percentage", config["scrub"]["percentage"],
+                "--older-than", config["scrub"]["older-than"]
+            ])
         except subprocess.CalledProcessError as e:
             logging.error(e)
             finish(False)
