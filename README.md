@@ -8,7 +8,7 @@ scheduler.
 
 ## How to use
 * If you don’t already have it, download and install
-  [the latest python 2.7](http://www.python.org/getit/).
+  [the latest python 3](http://www.python.org/getit/).
 * Download [the latest release](https://github.com/Chronial/snapraid-runner/releases)
   of this script and extract it anywhere or clone this repository via git.
 * Copy/rename the `snapraid-runner.conf.example` to `snapraid-runner.conf` and
