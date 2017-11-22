@@ -52,12 +52,18 @@ def snapraid_command(command: str, args: list = None, ignore_errors: bool = Fals
         args = []
     args.insert(0, config["snapraid"]["executable"])
     args.insert(1, command)
-    args.extend(["--conf", config["snapraid"]["config", "--verbose"]])
+    args.extend(["--conf", config["snapraid"]["config"], "--verbose"])
 
-    p = subprocess.Popen(
-        args,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE)
+    p = None
+    try:
+        p = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+    except FileNotFoundError:
+        logging.error("The configured snapraid executable \"{}\" does not "
+                      "exist or is not a file".format(config["snapraid"]["executable"]))
+        finish(False)
     out = []
     threads = [
         tee_log(p.stdout, out, OUTPUT),
@@ -129,10 +135,15 @@ def finish(is_success):
             send_email(is_success)
         except Exception:
             logging.exception("Failed to send email")
+
     if is_success:
-        logging.info("Run finished successfully")
+        logging.info("=" * 60)
+        logging.info("Run finished successfully.")
+        logging.info("=" * 60 + "\n")
     else:
-        logging.error("Run failed")
+        logging.error("=" * 60)
+        logging.error("Run failed!")
+        logging.error("=" * 60 + "\n")
     sys.exit(0 if is_success else 1)
 
 
@@ -243,27 +254,27 @@ def run():
     logging.info("Run started")
     logging.info("=" * 60)
 
-    if not os.path.isfile(config["snapraid"]["executable"]):
-        logging.error("The configured snapraid executable \"{}\" does not "
-                      "exist or is not a file".format(config["snapraid"]["executable"]))
-        finish(False)
     if not os.path.isfile(config["snapraid"]["config"]):
         logging.error("Snapraid config does not exist at " + config["snapraid"]["config"])
         finish(False)
 
     if config["snapraid"]["touch"]:
+        logging.info("=" * 30)
         logging.info("Running touch...")
+        logging.info("=" * 30)
         snapraid_command("touch")
-        logging.info("*" * 60)
 
+    logging.info("=" * 30)
     logging.info("Running diff...")
+    logging.info("=" * 30)
     diff_out = snapraid_command("diff", ignore_errors=True)
-    logging.info("*" * 60)
 
     diff_results = Counter(line.split(" ")[0] for line in diff_out)
     diff_results = dict((x, diff_results[x]) for x in ["add", "remove", "move", "update"])
+    logging.info("*" * 60)
     logging.info(("Diff results: {add} added,  {remove} removed,  "
                   + "{move} moved,  {update} modified").format(**diff_results))
+    logging.info("*" * 60)
 
     if 0 <= config["snapraid"]["deletethreshold"] < diff_results["remove"]:
         logging.error(
@@ -275,25 +286,27 @@ def run():
             diff_results["update"] == 0):
         logging.info("No changes detected, no sync required")
     else:
+        logging.info("=" * 30)
         logging.info("Running sync...")
+        logging.info("=" * 30)
         try:
             snapraid_command("sync")
         except subprocess.CalledProcessError as e:
             logging.error(e)
             finish(False)
-        logging.info("*" * 60)
 
     if config["scrub"]["enabled"]:
+        logging.info("=" * 30)
         logging.info("Running scrub...")
+        logging.info("=" * 30)
         try:
             snapraid_command("scrub", [
-                "--percentage", config["scrub"]["percentage"],
-                "--older-than", config["scrub"]["older-than"]
+                "--percentage", str(config["scrub"]["percentage"]),
+                "--older-than", str(config["scrub"]["older-than"])
             ])
         except subprocess.CalledProcessError as e:
             logging.error(e)
             finish(False)
-        logging.info("*" * 60)
 
     logging.info("All done")
     finish(True)

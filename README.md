@@ -11,7 +11,7 @@ scheduler.
   [the latest python 3](http://www.python.org/getit/).
 * Download [the latest release](https://github.com/Chronial/snapraid-runner/releases)
   of this script and extract it anywhere or clone this repository via git.
-* Copy/rename the `snapraid-runner.conf.example` to `snapraid-runner.conf` and
+* Copy the `snapraid-runner.conf` and
   edit its contents. You need to at least configure `snapraid.exectable` and
   `snapraid.config`.
 * Run the script via `python snapraid-runner.py`.
