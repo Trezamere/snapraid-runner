@@ -212,7 +212,7 @@ def setup_logger():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--conf",
+    parser.add_argument("-c", "--config",
                         default="snapraid-runner.conf",
                         metavar="CONFIG",
                         help="Configuration file (default: %(default)s)")

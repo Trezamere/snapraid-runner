@@ -14,7 +14,7 @@ scheduler.
 * Copy the `snapraid-runner.conf` and
   edit its contents. You need to at least configure `snapraid.exectable` and
   `snapraid.config`.
-* Run the script via `python snapraid-runner.py`.
+* Run the script via `python3 snapraid-runner.py`.
 
 ## Features
 * Runs `diff` before `sync` to see how many files were deleted and aborts if
