@@ -214,6 +214,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config",
                         default="snapraid-runner.conf",
+                        dest='conf',
                         metavar="CONFIG",
                         help="Configuration file (default: %(default)s)")
     parser.add_argument("--no-scrub",
